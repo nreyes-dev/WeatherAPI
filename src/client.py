@@ -25,7 +25,7 @@ class WeatherClient:
     #   city: string. E.g "Bogota" 
 
     # Output
-    #     dictionanary with data
+    #     dictionanary with weather data
     #     {
     #        "weather_field_1": "..."
     #        .
@@ -35,8 +35,16 @@ class WeatherClient:
     #        "forecast": {...}
     #     }
     def get_weather(self, country, city):
-        self.__validate_city(city)
-        self.__validate_country(country)
+        # validating parameters...
+        errors = []
+        city_errors = self.__validate_city(city)
+        country_errors = self.__validate_country(country)
+        errors.extend(city_errors)
+        errors.extend(country_errors)
+        if len(errors) > 0:
+            raise InvalidParameters(errors)
+
+        # running get weather logic... (external api)
         current = self.__get_current_weather(country, city)
         forecast = self.__get_forecast(country, city)
         current['forecast'] = forecast
@@ -83,9 +91,34 @@ class WeatherClient:
         return {}
 
     def __validate_city(self, city):
-        # TODO
-        pass
+        errors = []
+        if city is None:
+            errors.append("missing city parameter")
+        else: 
+            if not isinstance(city, str):
+                errors.append("invalid city: cannot be parsed as a string")
+            if not city.isalpha():
+                errors.append("invalid city: not an alphabetical value")
+        return errors
 
     def __validate_country(self, country):
-        # TODO
-        pass
+        errors = []
+        if country is None:
+            errors.append("missing country parameter")
+        else: 
+            if not isinstance(country, str):
+                errors.append("invalid country: cannot be parsed as a string")
+            if len(country) > 2:
+                errors.append("invalid country: larger than two")
+            if not country.islower():
+                errors.append("invalid country: not an alphabetical lowercase value")
+        return errors
+
+# EXCEPTIONS
+# custom exceptions raised by this module
+
+class InvalidParameters(Exception):
+    def __init__(self, errors):
+        self.errors = errors 
+
+# TODO test validators
