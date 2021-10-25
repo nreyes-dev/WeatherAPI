@@ -1,6 +1,6 @@
 from flask import Blueprint, request, Response
 import json
-from .weather_client import WeatherClient
+from .client import WeatherClient
 from .logger import log, OK as LOG_OK
 
 PATH = "/weather"
