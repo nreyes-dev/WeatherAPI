@@ -14,6 +14,6 @@ def get_weather():
     log(LOG_OK, "Recieved weather request for {}, {}".format(city, country))
 
     weather_client = WeatherClient()
-    response = weather_client.get_weather(city, country)
+    response = weather_client.get_weather(country, city)
 
     return Response(json.dumps(response), status=200, mimetype="application/json")
