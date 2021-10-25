@@ -29,9 +29,9 @@ class WeatherClient:
     #        "weather_field_n": "..."
     #        "forecast": {...}
     #     }
-    def get_weather(self):
-        current = self.__get_current_weather()
-        forecast = self.__get_forecast()
+    def get_weather(self, country_code, city):
+        current = self.__get_current_weather(country_code, city)
+        forecast = self.__get_forecast(country_code, city)
         current['forecast'] = forecast
         return current
 
@@ -41,9 +41,9 @@ class WeatherClient:
     # Parameters
     #   country_code: size 2 string, lowercase. E.g "co" 
     #   city: string. E.g "Bogota" 
-    def __get_current_weather(self):
+    def __get_current_weather(self, country_code, city):
         return {}
 
     # uses an external api to get forecast for a location, returns dictionary
-    def __get_forecast(self):
+    def __get_forecast(self, country_code, city):
         return {}
