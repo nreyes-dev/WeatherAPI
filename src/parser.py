@@ -25,8 +25,9 @@ class OpenWeatherParser:
         if not isinstance(weather, dict):
             raise TypeError("trying to parse weather that isn't a dictionary")
         result = {}
-        self.__parse_weather_temperature(weather, result)
-        self.__parse_weather_pressure(weather, result)
+        self.__parse_temperature(weather, result)
+        self.__parse_pressure(weather, result)
+        self.__parse_cloudiness(weather, result)
         return result
     
     # Parses forecast response data from a call to the Open Weather's forecast external API into a human-readable dictionary 
@@ -58,18 +59,37 @@ class OpenWeatherParser:
     # PARSING FUNCTIONS:
     # the following are impure functions that build the passed-in result dictionary by adding a human-readable field parsed from the weather parameter
 
-    def __parse_weather_temperature(self, weather, result):
+    def __parse_temperature(self, weather, result):
         # FIXME wip... simplified for now
         try:
             temperature = weather['main']['temp']
             result['temperature'] = temperature
         except KeyError as e:
-            log(LOG_WARNING, "key error when parsing weather temperature: {}".format(str(e)))
+            log(LOG_WARNING, "key error when parsing temperature: {}".format(str(e)))
 
-    def __parse_weather_pressure(self, weather, result):
+    def __parse_pressure(self, weather, result):
         try:
             pressure = weather['main']['pressure']
             result['pressure'] = "{} hpa".format(pressure)
+        except KeyError as e:
+            log(LOG_WARNING, "key error when parsing pressure: {}".format(str(e)))
+
+    def __parse_cloudiness(self, weather, result):
+        try:
+            weather_list = weather['weather']
+            # looking for cloudiness item...
+            for item in weather_list:
+                # if item is of tpye cloudiness... (id = 8xx)
+                if item['id'] in range(800, 900):
+                    result['cloudiness'] = item['description'].capitalize()
+                    break
+
+        except KeyError as e:
+            log(LOG_WARNING, "key error when parsing cloudiness: {}".format(str(e)))
+        except Exception as e:
+            log(LOG_WARNING, "exception when parsing cloudiness: {}".format(str(e)))
+
+
         except KeyError as e:
             log(LOG_WARNING, "key error when parsing weather pressure: {}".format(str(e)))
 
