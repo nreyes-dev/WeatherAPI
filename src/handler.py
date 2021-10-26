@@ -1,10 +1,11 @@
 from flask import Blueprint, request, Response
 import json
 from .client import WeatherClient, InvalidParameters
-from .logger import log, OK as LOG_OK
+from .logger import log, OK as LOG_OK, ERROR as LOG_ERROR
 
 OK = 200
 BAD_REQUEST = 400
+INTERNAL_SERVER_ERROR = 500
 
 PATH = "/weather"
 
@@ -26,6 +27,12 @@ def get_weather():
         content = json.dumps({
             "message": "Invalid parameters. Please make sure that the city and country are valid",
             "errors": e.errors
+        })
+    except Exception as e:
+        log(LOG_ERROR, "Unexpected exception raised when getting weather for {}, {}:\n{}".format(city, country, repr(e)))
+        status = INTERNAL_SERVER_ERROR
+        content = json.dumps({
+            "message": "Something went wrong with your request, please try again later"
         })
 
     return Response(content, status, mimetype="application/json")
