@@ -51,7 +51,7 @@ class WeatherClient:
 
         # running get weather logic... (external api)
         result = {
-            "location_name": "{}, {}".format(city, country.upper())
+            "location_name": "{}, {}".format(city.capitalize(), country.upper())
         }
         current = self.__get_current_weather(country, city)
         forecast = self.__get_forecast(country, city)
