@@ -138,8 +138,8 @@ class WeatherClient:
         else: 
             if not isinstance(city, str):
                 errors.append("invalid city: cannot be parsed as a string")
-            if not city.isalpha():
-                errors.append("invalid city: not an alphabetical value")
+            if not all(char.isalpha() or char.isspace() for char in city):
+                errors.append("invalid city: contains non-alphabetical, non-space values")
         return errors
 
     def __validate_country(self, country):
