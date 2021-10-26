@@ -16,20 +16,44 @@ class OpenWeatherParser:
             raise ValueError("trying to initialize parser with invalid temp config '{}'".format(temp_config))
         self.temp_config = temp_config
 
-    # METHODS FOR PARSING CURRENT WEATHER
-
-    # Parses the response of a succesful (200 OK) "/weather" call to the Open Weather external API into a human-readable dictionary 
+    # Parses weather response data from a call to the Open Weather external API into a human-readable dictionary 
     # Parameters:
-    #   weather: Dictionary with Opean Weather's OK response content for a /weather GET request
+    #   weather: Dictionary with Opean Weather's OK response content for weather
     # Output:
     #   Human-readable dictionary with weather information
-    def parse_ok_current_weather(self, weather):
+    def parse_ok_weather(self, weather):
         if not isinstance(weather, dict):
             raise TypeError("trying to parse weather that isn't a dictionary")
         result = {}
         self.__parse_weather_temperature(weather, result)
         self.__parse_weather_pressure(weather, result)
         return result
+    
+    # Parses forecast response data from a call to the Open Weather's forecast external API into a human-readable dictionary 
+    # Parameters:
+    #   weather: Dictionary list with Opean Weather's OK response content for forecasts
+    # Output:
+    #   Human-readable dictionary list with forecast information
+    def parse_ok_forecast(self, forecast):
+        if not isinstance(forecast, dict):
+            raise TypeError("trying to parse forecast that isn't a dictionary")
+        result = []
+
+        # TODO set limit from env var?
+        # each item in the forecast's list is a weather dictionary just like the one from a /weather call but with a date
+        for item in forecast['list']:
+            if not isinstance(item, dict):
+                raise TypeError("parsing a forecast list that has a non-dict item")
+
+            # parsing weather data...
+            partial_result = self.parse_ok_weather(item)
+            partial_result['datetime'] = item['dt_txt']
+
+            result.append(partial_result)
+
+        return result
+
+
 
     # PARSING FUNCTIONS:
     # the following are impure functions that build the passed-in result dictionary by adding a human-readable field parsed from the weather parameter
@@ -49,14 +73,4 @@ class OpenWeatherParser:
         except KeyError as e:
             log(LOG_WARNING, "key error when parsing weather pressure: {}".format(str(e)))
 
-
-
-
-
-
-    # METHODS FOR PARSING FORECAST
-
-    # TODO
-        
-        
 # TODO tests

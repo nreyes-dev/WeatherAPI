@@ -8,6 +8,9 @@ from .parser import OpenWeatherParser
 API_KEY = "cd21bcc54809f9d8d3c8ac821c2501f8"
 EXTERNAL_API_BASE_URL = "https://api.openweathermap.org/data/2.5"
 
+WEATHER_EXTERNAL_ENDPOINT = "weather"
+FORECAST_EXTERNAL_ENDPOINT = "forecast"
+
 # class responsible for fetching weather data from external api
 class WeatherClient:
 
@@ -36,6 +39,7 @@ class WeatherClient:
     #        "forecast": {...}
     #     }
     def get_weather(self, country, city):
+
         # validating parameters...
         errors = []
         city_errors = self.__validate_city(city)
@@ -48,32 +52,74 @@ class WeatherClient:
         # running get weather logic... (external api)
         current = self.__get_current_weather(country, city)
         forecast = self.__get_forecast(country, city)
+
+        # joining current weather and forecast...
         current['forecast'] = forecast
         return current
 
     # PRIVATE METHODS
 
     # uses an external api to get current weather for a location, returns dictionary
+    # and parses the response to the desired format using the parser injected at initialization
     # Parameters
     #   country_code: size 2 string, lowercase. E.g "co" 
     #   city: string. E.g "Bogota" 
+    # Output 
+    #   weather dictionary from an OpenWeather OK Response
     def __get_current_weather(self, country_code, city):
 
-
         # making request to external api...
-        url = "{}/weather".format(self.url)
         params = {
             "q": "{},{}".format(city, country_code),
             "appid": self.api_key 
         }
         log(LOG_OK, "Making current weather request to external API for {}, {}".format(city, country_code))
+        unparsed_result = self.__make_request(params, WEATHER_EXTERNAL_ENDPOINT)
+
+        # parsing response...
+        result = self.parser.parse_ok_weather(unparsed_result)
+
+        return result
+
+
+    # uses an external api to get forecast for a location
+    # and parses the response to the desired format using the parser injected at initialization
+    # Parameters
+    #   country_code: size 2 string, lowercase. E.g "co" 
+    #   city: string. E.g "Bogota" 
+    # Output 
+    #   forecast dictionary from an OpenWeather OK Response
+    def __get_forecast(self, country_code, city):
+
+        # making request to external api...
+        params = {
+            "q": "{},{}".format(city, country_code),
+            "appid": self.api_key 
+        }
+        log(LOG_OK, "Making forecast request to external API for {}, {}".format(city, country_code))
+        unparsed_result = self.__make_request(params, FORECAST_EXTERNAL_ENDPOINT)
+
+        # parsing response...
+        result = self.parser.parse_ok_forecast(unparsed_result)
+
+        return result
+
+    # makes the actual request to the OpenWeather API and handles response
+    # Parameters
+    #   endpoint: A string. Should take the value of either WEATHER_EXTERNAL_ENDPOINT or FORECAST_EXTERNAL_ENDPOINT
+    def __make_request(self, params, endpoint):
+        # validation...
+        if endpoint not in (WEATHER_EXTERNAL_ENDPOINT, FORECAST_EXTERNAL_ENDPOINT):
+            raise ValueError("trying to make a request to unsupported OpenWeather endpoint '{}'".format(endpoint))
+
+        # make request...
+        url = "{}/{}".format(self.url, endpoint)
         response = requests.get(url, params)
 
         # handling response...
         code = response.status_code
         if code == 200:
-            unparsed_weather = json.loads(response.content)
-            result = self.parser.parse_ok_current_weather(unparsed_weather)
+            result = json.loads(response.content)
         else:
             # TODO handle failure and stuff
             content = json.loads(response.content)
@@ -84,13 +130,6 @@ class WeatherClient:
 
             result = {"error": code}
         return result
-
-    # uses an external api to get forecast for a location, returns dictionary
-    # Parameters
-    #   country_code: size 2 string, lowercase. E.g "co" 
-    #   city: string. E.g "Bogota" 
-    def __get_forecast(self, country_code, city):
-        return {}
 
     def __validate_city(self, city):
         errors = []
