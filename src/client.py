@@ -1,6 +1,7 @@
 import requests
 import json
 from .logger import log, WARNING as LOG_WARNING, OK as LOG_OK
+from .parser import OpenWeatherParser
 
 #TODO env variables
 #os.environ.get('API_KEY')
@@ -15,7 +16,7 @@ class WeatherClient:
     def __init__(self):
         self.url = EXTERNAL_API_BASE_URL
         self.api_key = API_KEY
-        #self.parser = OpenWeatherParser() TODO
+        self.parser = OpenWeatherParser()
     
     # gets weather and forecast for a location defined by a country code and a city name.
     # validates the country and city parameters to be of the expected format
@@ -71,9 +72,10 @@ class WeatherClient:
         # handling response...
         code = response.status_code
         if code == 200:
-            result = json.loads(response.content)
+            unparsed_weather = json.loads(response.content)
+            result = self.parser.parse_ok_current_weather(unparsed_weather)
         else:
-            # TODO handle failure 
+            # TODO handle failure and stuff
             content = json.loads(response.content)
             if "message" in content:
                 log(LOG_WARNING, "Recieved a {} response from external api with message: '{}'".format(code, content['message']))
