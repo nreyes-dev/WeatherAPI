@@ -50,12 +50,15 @@ class WeatherClient:
             raise InvalidParameters(errors)
 
         # running get weather logic... (external api)
+        result = {
+            "location_name": "{}, {}".format(city, country.upper())
+        }
         current = self.__get_current_weather(country, city)
         forecast = self.__get_forecast(country, city)
 
-        # joining current weather and forecast...
-        current['forecast'] = forecast
-        return current
+        result.update(current)
+        result['forecast'] = forecast
+        return result 
 
     # PRIVATE METHODS
 
