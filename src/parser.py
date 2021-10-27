@@ -1,5 +1,6 @@
 from .logger import log, WARNING as LOG_WARNING
 from datetime import datetime 
+import unittest
 
 # temp configurations
 FAHRENHEIT_AND_CELSIUS = 0
@@ -47,7 +48,6 @@ class OpenWeatherParser:
             raise TypeError("trying to parse forecast that isn't a dictionary")
         result = []
 
-        # TODO set limit from env var?
         # each item in the forecast's list is a weather dictionary just like the one from a /weather call but with a date
         for item in forecast['list']:
             if not isinstance(item, dict):
@@ -136,4 +136,182 @@ class OpenWeatherParser:
         except KeyError as e:
             log(LOG_WARNING, "key error when parsing geocoordinates: {}".format(str(e)))
 
-# TODO tests
+
+# UNITTESTS
+
+class TestParser(unittest.TestCase):
+    def test_parse_weather(self):
+        input = {
+            "coord": {
+                "lon": -54.95,
+                "lat": -34.9667
+            },
+            "weather": [
+                {
+                    "id": 800,
+                    "main": "Clear",
+                    "description": "clear sky",
+                    "icon": "01d"
+                }
+            ],
+            "base": "stations",
+            "main": {
+                "temp": 302.21,
+                "feels_like": 301.2,
+                "temp_min": 302.21,
+                "temp_max": 302.21,
+                "pressure": 1020,
+                "humidity": 32
+            },
+            "visibility": 10000,
+            "wind": {
+                "speed": 1.54,
+                "deg": 180
+            },
+            "clouds": {
+                "all": 0
+            },
+            "dt": 1635369297,
+            "sys": {
+                "type": 1,
+                "id": 8712,
+                "country": "UY",
+                "sunrise": 1635324147,
+                "sunset": 1635372277
+            },
+            "timezone": -10800,
+            "id": 3440939,
+            "name": "Punta del Este",
+            "cod": 200
+        }
+        expected_output_celsius = {
+            "temperature": "29 °C",
+            "pressure": "1020 hpa",
+            "cloudiness": "Clear sky",
+            "humidity": "32%",
+            "sunrise": "05:42",
+            "sunset": "19:04",
+            "geo_coordinates": "[-34.97, -54.95]",
+        }
+
+        expected_output_fahrenheit = {
+            "temperature": "84 °F",
+            "pressure": "1020 hpa",
+            "cloudiness": "Clear sky",
+            "humidity": "32%",
+            "sunrise": "05:42",
+            "sunset": "19:04",
+            "geo_coordinates": "[-34.97, -54.95]",
+        }
+
+        expected_output_both = {
+            "temperature": "84 °F, 29 °C",
+            "pressure": "1020 hpa",
+            "cloudiness": "Clear sky",
+            "humidity": "32%",
+            "sunrise": "05:42",
+            "sunset": "19:04",
+            "geo_coordinates": "[-34.97, -54.95]",
+        }
+
+        self.assertEqual(OpenWeatherParser(temp_config=CELSIUS).parse_weather(input), expected_output_celsius)
+        self.assertEqual(OpenWeatherParser(temp_config=FAHRENHEIT).parse_weather(input), expected_output_fahrenheit)
+        self.assertEqual(OpenWeatherParser(temp_config=FAHRENHEIT_AND_CELSIUS).parse_weather(input), expected_output_both)
+
+    def test_parse_forecast(self):
+        input = {
+            "cod": "200",
+            "message": 0,
+            "cnt": 40,
+            "list": [
+                {
+                    "dt": 1635379200,
+                    "main": {
+                        "temp": 288.4,
+                        "feels_like": 287.94,
+                        "temp_min": 287.29,
+                        "temp_max": 288.4,
+                        "pressure": 1008,
+                        "sea_level": 1008,
+                        "grnd_level": 1001,
+                        "humidity": 75,
+                        "temp_kf": 1.11
+                    },
+                    "weather": [
+                        {
+                            "id": 803,
+                            "main": "Clouds",
+                            "description": "broken clouds",
+                            "icon": "04n"
+                        }
+                    ],
+                    "clouds": {
+                        "all": 83
+                    },
+                    "wind": {
+                        "speed": 6.86,
+                        "deg": 185,
+                        "gust": 15.71
+                    },
+                    "visibility": 10000,
+                    "pop": 0.04,
+                    "sys": {
+                        "pod": "n"
+                    },
+                    "dt_txt": "2021-10-28 00:00:00"
+                },
+                {
+                    "dt": 1635390000,
+                    "main": {
+                        "temp": 287.15,
+                        "feels_like": 286.67,
+                        "temp_min": 286.25,
+                        "temp_max": 287.15,
+                        "pressure": 1007,
+                        "sea_level": 1007,
+                        "grnd_level": 999,
+                        "humidity": 79,
+                        "temp_kf": 0.9
+                    },
+                    "weather": [
+                        {
+                            "id": 804,
+                            "main": "Clouds",
+                            "description": "overcast clouds",
+                            "icon": "04n"
+                        }
+                    ],
+                    "clouds": {
+                        "all": 92
+                    },
+                    "wind": {
+                        "speed": 7.06,
+                        "deg": 180,
+                        "gust": 16.29
+                    },
+                    "visibility": 10000,
+                    "pop": 0.15,
+                    "sys": {
+                        "pod": "n"
+                    },
+                    "dt_txt": "2021-10-28 03:00:00"
+                }
+            ]
+        }
+        expected_output = [
+            {
+                "temperature": "59 °F, 15 °C",
+                "pressure": "1008 hpa",
+                "cloudiness": "Broken clouds",
+                "humidity": "75%",
+                "datetime": "2021-10-28 00:00:00"
+            },
+            {
+                "temperature": "57 °F, 14 °C",
+                "pressure": "1007 hpa",
+                "cloudiness": "Overcast clouds",
+                "humidity": "79%",
+                "datetime": "2021-10-28 03:00:00"
+            }
+        ]
+        self.assertEqual(OpenWeatherParser().parse_forecast(input), expected_output)
