@@ -225,6 +225,8 @@ class WeatherClient:
                 errors.append("invalid country: shorter than two")
             if not country.islower():
                 errors.append("invalid country: not an alphabetical lowercase value")
+            if not country.isalpha():
+                errors.append("invalid country: contains non-alphabetical values")
         return errors
 
 # EXCEPTIONS
@@ -307,10 +309,10 @@ class TestValidators(unittest.TestCase):
 
     def test_invalid_country_numbers(self):
         input = "a1"
-        expected_output = ['invalid country: not an alphabetical lowercase value']
+        expected_output = ['invalid country: contains non-alphabetical values']
         self.assertEqual(WeatherClient.validate_country(input), expected_output)
 
     def test_invalid_country_symbols(self):
         input = "a%"
-        expected_output = ['invalid country: not an alphabetical lowercase value']
+        expected_output = ['invalid country: contains non-alphabetical values']
         self.assertEqual(WeatherClient.validate_country(input), expected_output)
