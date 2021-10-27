@@ -36,6 +36,7 @@ class OpenWeatherParser:
         if not is_forecast_item:
             self.__parse_sunrise(weather, result)
             self.__parse_sunset(weather, result)
+            self.__parse_geocoordinates(weather, result)
         return result
     
     # Parses forecast response data from a call to the Open Weather's forecast external API into a human-readable dictionary 
@@ -119,5 +120,13 @@ class OpenWeatherParser:
             result['sunset'] = "{:02d}:{:02d}".format(sunset_datetime.hour, sunset_datetime.minute)
         except KeyError as e:
             log(LOG_WARNING, "key error when parsing sunset: {}".format(str(e)))
+
+    def __parse_geocoordinates(self, weather, result):
+        try:
+            lon = weather['coord']['lon']
+            lat = weather['coord']['lat']
+            result['geo_coordinates'] = "[{:.2f}, {:.2f}]".format(lat, lon)
+        except KeyError as e:
+            log(LOG_WARNING, "key error when parsing geocoordinates: {}".format(str(e)))
 
 # TODO tests
