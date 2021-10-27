@@ -6,6 +6,7 @@ from datetime import datetime
 from cachetools import TTLCache
 import os
 import sys
+import unittest
 
 EXTERNAL_API_BASE_URL = "https://api.openweathermap.org/data/2.5"
 
@@ -94,8 +95,8 @@ class WeatherClient:
 
         # validating parameters...
         errors = []
-        city_errors = self.__validate_city(city)
-        country_errors = self.__validate_country(country)
+        city_errors = WeatherClient.validate_city(city)
+        country_errors = WeatherClient.validate_country(country)
         errors.extend(city_errors)
         errors.extend(country_errors)
         if len(errors) > 0:
@@ -198,7 +199,9 @@ class WeatherClient:
             if code == 404:
                 raise CityNotFound
 
-    def __validate_city(self, city):
+
+    # The validate methods could/should be private but I didn't find a way to apply unittests to private methods in python
+    def validate_city(city):
         errors = []
         if city is None:
             errors.append("missing city parameter")
@@ -209,7 +212,7 @@ class WeatherClient:
                 errors.append("invalid city: contains non-alphabetical, non-space values")
         return errors
 
-    def __validate_country(self, country):
+    def validate_country(country):
         errors = []
         if country is None:
             errors.append("missing country parameter")
@@ -218,6 +221,8 @@ class WeatherClient:
                 errors.append("invalid country: cannot be parsed as a string")
             if len(country) > 2:
                 errors.append("invalid country: larger than two")
+            if len(country) < 2:
+                errors.append("invalid country: shorter than two")
             if not country.islower():
                 errors.append("invalid country: not an alphabetical lowercase value")
         return errors
@@ -237,4 +242,75 @@ class CityNotFound(Exception):
     def __init__(self):
         pass
 
-# TODO test validators
+# UNITTESTS
+
+class TestValidators(unittest.TestCase):
+    def test_valid_city_common(self):
+        input = "Montevideo"
+        expected_output = []
+        self.assertEqual(WeatherClient.validate_city(input), expected_output)
+
+    def test_valid_city_with_spaces(self):
+        input = "Los Angeles"
+        expected_output = []
+        self.assertEqual(WeatherClient.validate_city(input), expected_output)
+
+    def test_valid_city_weird(self):
+        input = "lAs vEgaS"
+        expected_output = []
+        self.assertEqual(WeatherClient.validate_city(input), expected_output)
+
+    def test_invalid_city_numbers(self):
+        input = "12345"
+        expected_output = ['invalid city: contains non-alphabetical, non-space values']
+        self.assertEqual(WeatherClient.validate_city(input), expected_output)
+
+    def test_invalid_city_alphanumeric(self):
+        input = "1New York"
+        expected_output = ['invalid city: contains non-alphabetical, non-space values']
+        self.assertEqual(WeatherClient.validate_city(input), expected_output)
+
+    def test_invalid_city_symbols(self):
+        input = "Madrid %"
+        expected_output = ['invalid city: contains non-alphabetical, non-space values']
+        self.assertEqual(WeatherClient.validate_city(input), expected_output)
+
+    def test_valid_country(self):
+        input = "ar"
+        expected_output = []
+        self.assertEqual(WeatherClient.validate_country(input), expected_output)
+
+    def test_invalid_country_uppercase(self):
+        input = "AR"
+        expected_output = ['invalid country: not an alphabetical lowercase value']
+        self.assertEqual(WeatherClient.validate_country(input), expected_output)
+
+    def test_invalid_country_too_long(self):
+        input = "arg"
+        expected_output = ['invalid country: larger than two']
+        self.assertEqual(WeatherClient.validate_country(input), expected_output)
+
+    def test_invalid_country_too_short(self):
+        input = "a"
+        expected_output = ['invalid country: shorter than two']
+        self.assertEqual(WeatherClient.validate_country(input), expected_output)
+
+    def test_invalid_country_too_long_and_uppercase(self):
+        input = "ARG"
+        expected_output = ['invalid country: larger than two', 'invalid country: not an alphabetical lowercase value']
+        self.assertEqual(WeatherClient.validate_country(input), expected_output)
+
+    def test_invalid_country_too_short_and_uppercase(self):
+        input = "A"
+        expected_output = ['invalid country: shorter than two', 'invalid country: not an alphabetical lowercase value']
+        self.assertEqual(WeatherClient.validate_country(input), expected_output)
+
+    def test_invalid_country_numbers(self):
+        input = "a1"
+        expected_output = ['invalid country: not an alphabetical lowercase value']
+        self.assertEqual(WeatherClient.validate_country(input), expected_output)
+
+    def test_invalid_country_symbols(self):
+        input = "a%"
+        expected_output = ['invalid country: not an alphabetical lowercase value']
+        self.assertEqual(WeatherClient.validate_country(input), expected_output)
