@@ -2,6 +2,7 @@ import requests
 import json
 from .logger import log, WARNING as LOG_WARNING, OK as LOG_OK
 from .parser import OpenWeatherParser
+from datetime import datetime
 
 #TODO env variables
 #os.environ.get('API_KEY')
@@ -50,6 +51,7 @@ class WeatherClient:
             raise InvalidParameters(errors)
 
         # running get weather logic... (external api)
+        requested_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
         result = {
             "location_name": "{}, {}".format(city.capitalize(), country.upper())
         }
@@ -57,6 +59,7 @@ class WeatherClient:
         forecast = self.__get_forecast(country, city)
 
         result.update(current)
+        result['requested_time'] = requested_time
         result['forecast'] = forecast
         return result 
 
