@@ -38,5 +38,6 @@ Defaulted to 0.
 ## How to run:
 On project root directory:
 ```
+export WAPI_API_KEY=$KEY
 python3 main.py
 ```
