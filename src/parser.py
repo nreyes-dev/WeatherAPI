@@ -29,7 +29,7 @@ class OpenWeatherParser:
         if not isinstance(weather, dict):
             raise TypeError("trying to parse weather that isn't a dictionary")
         result = {}
-        self.__parse_temperature(weather, result)
+        self.__parse_temperature(self.temp_config, weather, result)
         self.__parse_pressure(weather, result)
         self.__parse_cloudiness(weather, result)
         self.__parse_humidity(weather, result)
@@ -68,11 +68,20 @@ class OpenWeatherParser:
     # PARSING FUNCTIONS:
     # the following are impure functions that build the passed-in result dictionary by adding a human-readable field parsed from the weather parameter
 
-    def __parse_temperature(self, weather, result):
-        # FIXME wip... simplified for now
+    def __parse_temperature(self, temp_config, weather, result):
         try:
-            temperature = weather['main']['temp']
-            result['temperature'] = temperature
+            kelvin = weather['main']['temp']
+            celsius = kelvin - 273.15
+
+            if temp_config == CELSIUS:
+                result['temperature'] = "{} °C".format(round(celsius))
+            else:
+                fahrenheit = kelvin*(9/5) - 459.67
+                if temp_config == FAHRENHEIT:
+                    result['temperature'] = "{} °F".format(round(fahrenheit))
+                else: # FAHRENHEIT_AND_CELSIUS
+                    result['temperature'] = "{} °F, {} °C".format(round(fahrenheit), round(celsius))
+            
         except KeyError as e:
             log(LOG_WARNING, "key error when parsing temperature: {}".format(str(e)))
 
