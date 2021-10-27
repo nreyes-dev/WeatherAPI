@@ -10,6 +10,7 @@ INTERNAL_SERVER_ERROR = 500
 PATH = "/weather"
 
 weather_handler = Blueprint("weather_handler", __name__)
+weather_client = WeatherClient()
 
 @weather_handler.route(PATH, methods=['GET'])
 def get_weather():
@@ -17,10 +18,8 @@ def get_weather():
     country = request.args.get("country")
     log(LOG_OK, "Recieved weather request for {}, {}".format(city, country))
 
-    weather_client = WeatherClient()
     try:
         content = weather_client.get_weather(country, city)
-        content = json.dumps(content) # FIXME, weather_client should return json-dumped data after caching is added
         status = OK 
     except InvalidParameters as e:
         status = BAD_REQUEST

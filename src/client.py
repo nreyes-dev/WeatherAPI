@@ -3,6 +3,7 @@ import json
 from .logger import log, WARNING as LOG_WARNING, OK as LOG_OK
 from .parser import OpenWeatherParser
 from datetime import datetime
+from cachetools import TTLCache
 
 #TODO env variables
 #os.environ.get('API_KEY')
@@ -12,7 +13,37 @@ EXTERNAL_API_BASE_URL = "https://api.openweathermap.org/data/2.5"
 WEATHER_EXTERNAL_ENDPOINT = "weather"
 FORECAST_EXTERNAL_ENDPOINT = "forecast"
 
-# class responsible for fetching weather data from external api
+CACHE_STORAGE_TIME_SECONDS = 120
+CACHE_MAXSIZE = 100
+
+# class responsible for fetching weather data from external api or cache
+# also responsible for updating the cache after external api requests
+# Attributes
+#   url: base url of external API
+#   api_key: token necessary for accessing external API
+#   parser: object responsible for parsing external API responses
+#   cache: data structure used for saving external API data in order to avoid unnecessarily making the same request more than once
+#       the cache functions as a python dictionary that uses string tuples of size 2 as keys. 
+#       the first element of each tuple key is the city in lowercase, the second element is the country code.
+#       the values of the dictionary are JSON strings with the weather data ready to be sent as response
+#       each value of the dictionary expires after {CACHE_STORAGE_TIME_SECONDS} seconds after insertion
+#       E.g of cache data structure:
+#       {
+#           ("Montevideo", "uy"): "{
+#               "location_name": "Montevideo, UY",
+#               "temperature": "88 °F, 31 °C",
+#               "pressure": "1020 hpa",
+#               "cloudiness": "Clear sky",
+#               "humidity": "29%",
+#               "sunrise": "05:47",
+#               "sunset": "19:09",
+#               "geo_coordinates": "[-34.83, -56.17]",
+#               "requested_time": "27-10-2021 13:55:23",
+#               "forecast": [...]
+#           }",
+#           ("Buenos Aires", "ar"): "{ ... }",
+#           ("Santiago", "cl"): "{ ... }"   
+#       }
 class WeatherClient:
 
     # PUBLIC METHODS
@@ -21,6 +52,7 @@ class WeatherClient:
         self.url = EXTERNAL_API_BASE_URL
         self.api_key = API_KEY
         self.parser = OpenWeatherParser()
+        self.cache = TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_STORAGE_TIME_SECONDS)
     
     # gets weather and forecast for a location defined by a country code and a city name.
     # validates the country and city parameters to be of the expected format
@@ -50,18 +82,33 @@ class WeatherClient:
         if len(errors) > 0:
             raise InvalidParameters(errors)
 
-        # running get weather logic... (external api)
-        requested_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
-        result = {
-            "location_name": "{}, {}".format(city.capitalize(), country.upper())
-        }
-        current = self.__get_current_weather(country, city)
-        forecast = self.__get_forecast(country, city)
+        city_country = (city.lower(), country)
+        # checking cache...
+        if city_country in self.cache:
 
-        result.update(current)
-        result['requested_time'] = requested_time
-        result['forecast'] = forecast
-        return result 
+            log(LOG_OK, "Weather data for {}, {} was found on cache, retrieving...".format(city, country))
+            return self.cache[city_country]
+
+        else: 
+            
+            # running get weather logic... (external api)
+            requested_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+            result = {
+                "location_name": "{}, {}".format(city.capitalize(), country.upper())
+            }
+            current = self.__get_current_weather(country, city)
+            forecast = self.__get_forecast(country, city)
+
+            # putting stuff together...
+            result.update(current)
+            result['requested_time'] = requested_time
+            result['forecast'] = forecast
+            weather_json = json.dumps(result)
+
+            # store in cache...
+            self.cache[city_country] = weather_json
+
+            return weather_json
 
     # PRIVATE METHODS
 
