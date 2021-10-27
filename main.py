@@ -1,16 +1,20 @@
-from src.logger import log, OK as LOG_OK
 from flask import Flask
 from src.handler import weather_handler
+import os
 
-PORT = 8081 # TODO env var
-PATH = "/weather"
+DEFAULT_PORT = 8081
 
 def main():
 
     app = Flask(__name__)
     app.register_blueprint(weather_handler)
 
-    app.run(port=PORT)
+    # setting port...
+    port=os.environ.get('WAPI_PORT')
+    if port is None:
+        port=DEFAULT_PORT
+
+    app.run(port=port)
 
 if __name__ == '__main__':
     main()

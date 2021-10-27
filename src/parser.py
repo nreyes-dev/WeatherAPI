@@ -8,8 +8,6 @@ CELSIUS = 2
 
 TEMP_CONFIGURATIONS = (CELSIUS, FAHRENHEIT, FAHRENHEIT_AND_CELSIUS)
 
-# TODO get temp config from env var. if not present default to fahrenheit AND celsius
-
 # Class responsible for translating the responses of the Open Weather external API into the format that meets this API's requirements
 class OpenWeatherParser:
 

@@ -17,9 +17,26 @@ pip install cachetools
 This is a python3 application!
 
 ## Environment variables:
-TODO 
+
+* WAPI_API_KEY: (required)
+
+A valid OpenWeather appid token
+
+* WAPI_PORT:
+
+The port on which to run the application. Defaulted to 8081.
+
+* WAPI_TEMPERATURE_CONFIG:
+
+Choose the metric for temperature.
+Both Celsius and Fahrenheit = 0
+Fahrenheit = 1
+Celsius = 2
+
+Defaulted to 0.
 
 ## How to run:
+On project root directory:
 ```
-TODO
+python3 main.py
 ```

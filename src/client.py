@@ -1,13 +1,12 @@
 import requests
 import json
-from .logger import log, WARNING as LOG_WARNING, OK as LOG_OK
+from .logger import log, WARNING as LOG_WARNING, OK as LOG_OK, ERROR as LOG_ERROR
 from .parser import OpenWeatherParser
 from datetime import datetime
 from cachetools import TTLCache
+import os
+import sys
 
-#TODO env variables
-#os.environ.get('API_KEY')
-API_KEY = "cd21bcc54809f9d8d3c8ac821c2501f8"
 EXTERNAL_API_BASE_URL = "https://api.openweathermap.org/data/2.5"
 
 WEATHER_EXTERNAL_ENDPOINT = "weather"
@@ -49,9 +48,29 @@ class WeatherClient:
     # PUBLIC METHODS
 
     def __init__(self):
+
         self.url = EXTERNAL_API_BASE_URL
-        self.api_key = API_KEY
-        self.parser = OpenWeatherParser()
+
+        self.api_key = os.environ.get('WAPI_API_KEY')
+        if self.api_key is None:
+            log(LOG_ERROR, "Application initialized without an api key. Please set the WAPI_API_KEY environment to a valid OpenWeather appid")
+            sys.exit()
+
+        temp_config = os.environ.get('WAPI_TEMPERATURE_CONFIG')
+        if temp_config is None:
+            self.parser = OpenWeatherParser()
+        else:
+            try:
+                self.parser = OpenWeatherParser(int(temp_config))
+            except ValueError as e:
+                log(LOG_WARNING, "WAPI_TEMPERATURE_CONFIG environment variable was set to an invalid value. Initializing with default value...")
+                self.parser = OpenWeatherParser()
+            except Exception as e:
+                # should be unreachable
+                log(LOG_WARNING, "Couldn't set temp config to provided env var because of raised exception: \n{}. \nInitializing with default value..."
+                    .format(repr(e)))
+                self.parser = OpenWeatherParser()
+
         self.cache = TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_STORAGE_TIME_SECONDS)
     
     # gets weather and forecast for a location defined by a country code and a city name.
@@ -172,17 +191,12 @@ class WeatherClient:
         # handling response...
         code = response.status_code
         if code == 200:
-            result = json.loads(response.content)
+            return json.loads(response.content)
         else:
-            # TODO handle failure and stuff
-            content = json.loads(response.content)
-            if "message" in content:
-                log(LOG_WARNING, "Recieved a {} response from external api with message: '{}'".format(code, content['message']))
-            else:
-                log(LOG_WARNING, "Recieved a {} response from external api".format(code))
-
-            result = {"error": code}
-        return result
+            if code == 401:
+                raise InvalidAPIKey
+            if code == 404:
+                raise CityNotFound
 
     def __validate_city(self, city):
         errors = []
@@ -214,5 +228,13 @@ class WeatherClient:
 class InvalidParameters(Exception):
     def __init__(self, errors):
         self.errors = errors 
+
+class InvalidAPIKey(Exception):
+    def __init__(self):
+        pass
+
+class CityNotFound(Exception):
+    def __init__(self):
+        pass
 
 # TODO test validators
