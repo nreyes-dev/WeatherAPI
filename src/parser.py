@@ -1,4 +1,6 @@
 from .logger import log, WARNING as LOG_WARNING
+from datetime import datetime 
+
 # temp configurations
 FAHRENHEIT_AND_CELSIUS = 0
 FAHRENHEIT = 1
@@ -19,9 +21,11 @@ class OpenWeatherParser:
     # Parses weather response data from a call to the Open Weather external API into a human-readable dictionary 
     # Parameters:
     #   weather: Dictionary with Opean Weather's OK response content for weather
+    #   is_forecast_item: Indicitates if the passed-in "weather" parameter is a forecast item or not (as there's some slight differences, e.g. forecast items
+    #       don't have sunrise/sunset)
     # Output:
     #   Human-readable dictionary with weather information
-    def parse_ok_weather(self, weather):
+    def parse_weather(self, weather, is_forecast_item = False):
         if not isinstance(weather, dict):
             raise TypeError("trying to parse weather that isn't a dictionary")
         result = {}
@@ -29,6 +33,9 @@ class OpenWeatherParser:
         self.__parse_pressure(weather, result)
         self.__parse_cloudiness(weather, result)
         self.__parse_humidity(weather, result)
+        if not is_forecast_item:
+            self.__parse_sunrise(weather, result)
+            self.__parse_sunset(weather, result)
         return result
     
     # Parses forecast response data from a call to the Open Weather's forecast external API into a human-readable dictionary 
@@ -36,7 +43,7 @@ class OpenWeatherParser:
     #   weather: Dictionary list with Opean Weather's OK response content for forecasts
     # Output:
     #   Human-readable dictionary list with forecast information
-    def parse_ok_forecast(self, forecast):
+    def parse_forecast(self, forecast):
         if not isinstance(forecast, dict):
             raise TypeError("trying to parse forecast that isn't a dictionary")
         result = []
@@ -48,7 +55,7 @@ class OpenWeatherParser:
                 raise TypeError("parsing a forecast list that has a non-dict item")
 
             # parsing weather data...
-            partial_result = self.parse_ok_weather(item)
+            partial_result = self.parse_weather(item, is_forecast_item=True)
             partial_result['datetime'] = item['dt_txt']
 
             result.append(partial_result)
@@ -96,5 +103,21 @@ class OpenWeatherParser:
             result['humidity'] = "{}%".format(humidity)
         except KeyError as e:
             log(LOG_WARNING, "key error when parsing humidity: {}".format(str(e)))
+
+    def __parse_sunrise(self, weather, result):
+        try:
+            sunrise_unix = weather['sys']['sunrise']
+            sunrise_datetime = datetime.fromtimestamp(sunrise_unix)
+            result['sunrise'] = "{:02d}:{:02d}".format(sunrise_datetime.hour, sunrise_datetime.minute)
+        except KeyError as e:
+            log(LOG_WARNING, "key error when parsing sunrise: {}".format(str(e)))
+
+    def __parse_sunset(self, weather, result):
+        try:
+            sunset_unix = weather['sys']['sunset']
+            sunset_datetime = datetime.fromtimestamp(sunset_unix)
+            result['sunset'] = "{:02d}:{:02d}".format(sunset_datetime.hour, sunset_datetime.minute)
+        except KeyError as e:
+            log(LOG_WARNING, "key error when parsing sunset: {}".format(str(e)))
 
 # TODO tests

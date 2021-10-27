@@ -80,7 +80,7 @@ class WeatherClient:
         unparsed_result = self.__make_request(params, WEATHER_EXTERNAL_ENDPOINT)
 
         # parsing response...
-        result = self.parser.parse_ok_weather(unparsed_result)
+        result = self.parser.parse_weather(unparsed_result)
 
         return result
 
@@ -103,7 +103,7 @@ class WeatherClient:
         unparsed_result = self.__make_request(params, FORECAST_EXTERNAL_ENDPOINT)
 
         # parsing response...
-        result = self.parser.parse_ok_forecast(unparsed_result)
+        result = self.parser.parse_forecast(unparsed_result)
 
         return result
 
