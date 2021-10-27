@@ -28,6 +28,7 @@ class OpenWeatherParser:
         self.__parse_temperature(weather, result)
         self.__parse_pressure(weather, result)
         self.__parse_cloudiness(weather, result)
+        self.__parse_humidity(weather, result)
         return result
     
     # Parses forecast response data from a call to the Open Weather's forecast external API into a human-readable dictionary 
@@ -89,8 +90,11 @@ class OpenWeatherParser:
         except Exception as e:
             log(LOG_WARNING, "exception when parsing cloudiness: {}".format(str(e)))
 
-
+    def __parse_humidity(self, weather, result):
+        try:
+            humidity = weather['main']['humidity']
+            result['humidity'] = "{}%".format(humidity)
         except KeyError as e:
-            log(LOG_WARNING, "key error when parsing weather pressure: {}".format(str(e)))
+            log(LOG_WARNING, "key error when parsing humidity: {}".format(str(e)))
 
 # TODO tests
