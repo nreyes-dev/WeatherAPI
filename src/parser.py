@@ -29,6 +29,7 @@ class OpenWeatherParser:
             raise TypeError("trying to parse weather that isn't a dictionary")
         result = {}
         self.__parse_temperature(self.temp_config, weather, result)
+        self.__parse_wind(weather, result)
         self.__parse_pressure(weather, result)
         self.__parse_cloudiness(weather, result)
         self.__parse_humidity(weather, result)
@@ -136,6 +137,76 @@ class OpenWeatherParser:
         except KeyError as e:
             log(LOG_WARNING, "key error when parsing geocoordinates: {}".format(str(e)))
 
+    def __parse_wind(self, weather, result):
+        try:
+            wind_speed = weather['wind']['speed']
+            wind_degree = weather['wind']['deg']
+
+            if wind_speed < 1: 
+                speed_description = "Calm"
+            elif wind_speed < 4: 
+                speed_description = "Light air"
+            elif wind_speed < 8: 
+                speed_description = "Light breeze"
+            elif wind_speed < 13: 
+                speed_description = "Gentle breeze"
+            elif wind_speed < 19: 
+                speed_description = "Moderate breeze"
+            elif wind_speed < 25: 
+                speed_description = "Fresh breeze"
+            elif wind_speed < 32: 
+                speed_description = "Strong breeze"
+            elif wind_speed < 39: 
+                speed_description = "Moderate gale"
+            elif wind_speed < 47: 
+                speed_description = "Fresh gale"
+            elif wind_speed < 55: 
+                speed_description = "Strong gale"
+            elif wind_speed < 64: 
+                speed_description = "Whole gale"
+            elif wind_speed < 73: 
+                speed_description = "Violent storm"
+            elif wind_speed >= 73: 
+                speed_description = "Hurricane"
+
+            if 348.75 <= wind_degree or wind_degree < 11.25:
+                degree_description = "north"
+            elif 11.25 <= wind_degree and wind_degree < 33.75:
+                degree_description = "north-northeast"
+            elif 33.75 <= wind_degree and wind_degree < 56.25:
+                degree_description = "northeast"
+            elif 56.25 <= wind_degree and wind_degree < 78.75:
+                degree_description = "east-northeast"
+            elif 78.75 <= wind_degree and wind_degree < 101.25:
+                degree_description = "east"
+            elif 101.25 <= wind_degree and wind_degree < 123.75:
+                degree_description = "east-southeast"
+            elif 123.75 <= wind_degree and wind_degree < 146.25:
+                degree_description = "southeast"
+            elif 146.25 <= wind_degree and wind_degree < 168.75:
+                degree_description = "south-southwest"
+            elif 168.75 <= wind_degree and wind_degree < 191.25:
+                degree_description = "south"
+            elif 191.25 <= wind_degree and wind_degree < 213.75:
+                degree_description = "south-southwest"
+            elif 213.75 <= wind_degree and wind_degree < 236.25:
+                degree_description = "southwest"
+            elif 236.25 <= wind_degree and wind_degree < 258.75:
+                degree_description = "west-southwest"
+            elif 258.75 <= wind_degree and wind_degree < 281.25:
+                degree_description = "west"
+            elif 281.25 <= wind_degree and wind_degree < 303.75:
+                degree_description = "west-northwest"
+            elif 303.75 <= wind_degree and wind_degree < 326.25:
+                degree_description = "northwest"
+            elif 326.25 <= wind_degree and wind_degree < 348.75:
+                degree_description = "north-northwest"
+
+            result['wind'] = "{}, {:.1f} m/s, {}".format(speed_description, wind_speed, degree_description)
+
+        except KeyError as e:
+            log(LOG_WARNING, "key error when parsing wind: {}".format(str(e)))
+
 
 # UNITTESTS
 
@@ -186,6 +257,7 @@ class TestParser(unittest.TestCase):
         }
         expected_output_celsius = {
             "temperature": "29 °C",
+            "wind": "Light air, 1.5 m/s, south",
             "pressure": "1020 hpa",
             "cloudiness": "Clear sky",
             "humidity": "32%",
@@ -196,6 +268,7 @@ class TestParser(unittest.TestCase):
 
         expected_output_fahrenheit = {
             "temperature": "84 °F",
+            "wind": "Light air, 1.5 m/s, south",
             "pressure": "1020 hpa",
             "cloudiness": "Clear sky",
             "humidity": "32%",
@@ -206,6 +279,7 @@ class TestParser(unittest.TestCase):
 
         expected_output_both = {
             "temperature": "84 °F, 29 °C",
+            "wind": "Light air, 1.5 m/s, south",
             "pressure": "1020 hpa",
             "cloudiness": "Clear sky",
             "humidity": "32%",
@@ -285,8 +359,8 @@ class TestParser(unittest.TestCase):
                         "all": 92
                     },
                     "wind": {
-                        "speed": 7.06,
-                        "deg": 180,
+                        "speed": 14.06,
+                        "deg": 237.01,
                         "gust": 16.29
                     },
                     "visibility": 10000,
@@ -301,6 +375,7 @@ class TestParser(unittest.TestCase):
         expected_output = [
             {
                 "temperature": "59 °F, 15 °C",
+                "wind": "Light breeze, 6.9 m/s, south",
                 "pressure": "1008 hpa",
                 "cloudiness": "Broken clouds",
                 "humidity": "75%",
@@ -308,6 +383,7 @@ class TestParser(unittest.TestCase):
             },
             {
                 "temperature": "57 °F, 14 °C",
+                "wind": "Moderate breeze, 14.1 m/s, west-southwest",
                 "pressure": "1007 hpa",
                 "cloudiness": "Overcast clouds",
                 "humidity": "79%",
